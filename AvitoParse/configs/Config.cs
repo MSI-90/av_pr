@@ -11,7 +11,7 @@ namespace AvitoParse.configs
       get { return _driver; } 
     }
     readonly string? _url = "https://www.avito.ru/";
-    private int _waitForLoading = 10000;
+    private int _waitForLoading = 5000;
     public IWebDriver? DriverInit()
     {
       try

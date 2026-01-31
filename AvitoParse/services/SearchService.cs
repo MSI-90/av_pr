@@ -2,6 +2,7 @@
 using AvitoParse.Contracts;
 using AvitoParse.Shared;
 using OpenQA.Selenium;
+using OpenQA.Selenium.Support.UI;
 using System.Collections.ObjectModel;
 
 namespace AvitoParse.services
@@ -23,7 +24,16 @@ namespace AvitoParse.services
       ReadOnlyCollection<IWebElement?> searchItems;
       try
       {
+        if (_driver == null) return resultSearch;
+
         _driver?.FindElement(helpers.ElemPath.searchInput).SendKeys(searchDto?.query + Keys.Enter);
+
+        var wait = new WebDriverWait(_driver!, TimeSpan.FromSeconds(10));
+        wait.Until(driver =>
+        {
+          var elements = driver.FindElements(helpers.ElemPath.itemSelector);
+          return elements.Count > 0;
+        });
         ChangeSearchLocation();
 
         //searchItems = _driver?.FindElements(helpers.ElemPath.itemSelector)!;
@@ -44,11 +54,19 @@ namespace AvitoParse.services
     /// <summary>
     /// Смена региона поиска
     /// </summary>
-    public void ChangeSearchLocation(string? region = "Новосибирск") 
+    public void ChangeSearchLocation(string region = "Рубцовск") 
     {
+      if (_driver is null) return;
+
       try
       {
+        var wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10))
+        {
+          PollingInterval = TimeSpan.FromMilliseconds(500)
+        };
+
         _driver?.FindElement(helpers.ElemPath.searchRegion).Click();
+
         var searchInput = _driver?.FindElement(helpers.ElemPath.regionInput);
         searchInput?.Click();
         while (!string.IsNullOrEmpty(searchInput?.GetAttribute("value")))
@@ -58,21 +76,25 @@ namespace AvitoParse.services
         
         //установить текст в input и прожать Enter
         searchInput?.SendKeys(region + Keys.Enter);
+
+        Thread.Sleep(2000);
+
         //Выпадающий список, отображающийся после ввода и подтверждения текста
         var regionAfterSendText = _driver?.FindElement(helpers.ElemPath.regionAfterSendText);
+
         // Элементы выпадающего списка представленные как Button-обертка
         var buttonItems = regionAfterSendText?.FindElements(By.XPath(".//button"));
 
         // Найти полное совпадение строки
         // TODO: пересмотреть на неполное совпадение строк
-        foreach(var buttonItem in buttonItems)
+        foreach (var buttonItem in buttonItems)
         {
           var spanItems = buttonItem.FindElements(By.XPath(".//span"));
           var isBreaked = false;
           foreach (var spanItem in spanItems)
           {
             var text = spanItem.Text;
-            if (text.Equals(region))
+            if (text.Contains(region, StringComparison.OrdinalIgnoreCase))
             {
               spanItem.Click();
               isBreaked = true;
