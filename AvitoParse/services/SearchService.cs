@@ -40,6 +40,7 @@ namespace AvitoParse.services
       return resultSearch;
     }
 
+    //TODO: пересмотреть далее параметр на параметр DTO модели.
     /// <summary>
     /// Смена региона поиска
     /// </summary>
