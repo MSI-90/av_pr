@@ -51,6 +51,7 @@ namespace AvitoParse.services
     }
 
     //TODO: пересмотреть далее параметр на параметр DTO модели.
+    //TODO: устновлен Thread.Sleep(2000), в связи с тем, что с 4 версии прекращена поддержка Expected Conditions для .NET, посмотреть иные варианты
     /// <summary>
     /// Смена региона поиска
     /// </summary>
