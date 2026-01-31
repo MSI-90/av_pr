@@ -1,0 +1,107 @@
+﻿using AvitoParse.configs;
+using AvitoParse.Contracts;
+using AvitoParse.Shared;
+using OpenQA.Selenium;
+using System.Collections.ObjectModel;
+
+namespace AvitoParse.services
+{
+  // TODO: нет проверки на открытие диалога смены региона поиска, нужна ли она?
+  public sealed class SearchService : ISearchService
+  {
+    Config Config { get; set; }
+    IWebDriver? _driver;
+    public SearchService()
+    {
+      Config = new Config();
+      _driver = Config.DriverInit();
+    }
+
+    public IEnumerable<string> GetSearchResults(SearchDTO? searchDto)
+    {
+      var resultSearch = new List<string>();
+      ReadOnlyCollection<IWebElement?> searchItems;
+      try
+      {
+        _driver?.FindElement(helpers.ElemPath.searchInput).SendKeys(searchDto?.query + Keys.Enter);
+        ChangeSearchLocation();
+
+        //searchItems = _driver?.FindElements(helpers.ElemPath.itemSelector)!;
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine($"Неполадка {0}", ex.Message);
+      }
+      finally
+      {
+        //_driver?.Quit();
+      }
+
+      return resultSearch;
+    }
+
+    /// <summary>
+    /// Смена региона поиска
+    /// </summary>
+    public void ChangeSearchLocation(string? region = "Новосибирск") 
+    {
+      try
+      {
+        _driver?.FindElement(helpers.ElemPath.searchRegion).Click();
+        var searchInput = _driver?.FindElement(helpers.ElemPath.regionInput);
+        searchInput?.Click();
+        while (!string.IsNullOrEmpty(searchInput?.GetAttribute("value")))
+        {
+          searchInput?.SendKeys(Keys.Backspace);
+        }
+        
+        //установить текст в input и прожать Enter
+        searchInput?.SendKeys(region + Keys.Enter);
+        //Выпадающий список, отображающийся после ввода и подтверждения текста
+        var regionAfterSendText = _driver?.FindElement(helpers.ElemPath.regionAfterSendText);
+        // Элементы выпадающего списка представленные как Button-обертка
+        var buttonItems = regionAfterSendText?.FindElements(By.XPath(".//button"));
+
+        // Найти полное совпадение строки
+        // TODO: пересмотреть на неполное совпадение строк
+        foreach(var buttonItem in buttonItems)
+        {
+          var spanItems = buttonItem.FindElements(By.XPath(".//span"));
+          var isBreaked = false;
+          foreach (var spanItem in spanItems)
+          {
+            var text = spanItem.Text;
+            if (text.Equals(region))
+            {
+              spanItem.Click();
+              isBreaked = true;
+              break;
+            }
+          }
+          if (isBreaked)
+            break;
+        }
+
+        // Прожать кнопку поиска всех объявялений по региону
+        // TODO: понаблюдать за сбоями в прожатии элемента
+        _driver?.FindElement(helpers.ElemPath.showAnnouncement).Click();
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine($"Неполадка {0}", ex.Message);
+      }
+      finally
+      {
+        //_driver?.Quit();
+      }
+    }
+
+    ~SearchService()
+    {
+      if (_driver is not null)
+      {
+        _driver?.Quit();
+      }
+    } 
+  }
+}
