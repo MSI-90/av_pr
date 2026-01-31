@@ -12,6 +12,8 @@ namespace AvitoParse
 
       // Add services to the container.
 
+      builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
       builder.Services.AddControllers();
 
       builder.Services.AddScoped<ISearchService, SearchService>();

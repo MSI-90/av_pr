@@ -5,6 +5,7 @@ namespace AvitoParse.helpers
   public static class ElemPath
   {
     //Выбор  региона для поиска
+    public static readonly By searchRegion0 = By.XPath("//div[@class='main-link-wrapper-FaUIo']//span[@class='main-link-firstLine-ffKwQ']");
     public static readonly By searchRegion = By.XPath("//div[@class='index-rightWrapper-su9bk']//span[@class='buyer-pages-mfe-location-nev1ty']");
     // Сам input в форме ввода региона
     public static readonly By regionInput = By.XPath("//input[@class='styles-module-searchInput-ndCjY']");

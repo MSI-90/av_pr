@@ -1,5 +1,6 @@
 ﻿using AvitoParse.configs;
 using AvitoParse.Contracts;
+using AvitoParse.Models.Exceptions;
 using AvitoParse.Shared;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
@@ -12,42 +13,48 @@ namespace AvitoParse.services
   {
     Config Config { get; set; }
     IWebDriver? _driver;
+    string _defaultSearchValue = "Все регионы";
     public SearchService()
     {
       Config = new Config();
       _driver = Config.DriverInit();
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="searchDto"></param>
+    /// <returns></returns>
     public IEnumerable<string> GetSearchResults(SearchDTO? searchDto)
     {
-      var resultSearch = new List<string>();
-      ReadOnlyCollection<IWebElement?> searchItems;
+      if (string.IsNullOrWhiteSpace(searchDto?.Query))
+        return Enumerable.Empty<string>();
+
+      if (_driver == null) 
+        return Enumerable.Empty<string>();
+
       try
       {
-        if (_driver == null) return resultSearch;
+        _driver?.FindElement(helpers.ElemPath.searchInput).SendKeys(searchDto?.Query + Keys.Enter);
 
-        _driver?.FindElement(helpers.ElemPath.searchInput).SendKeys(searchDto?.query + Keys.Enter);
+        var wait = new WebDriverWait(_driver!, TimeSpan.FromSeconds(2));
 
-        var wait = new WebDriverWait(_driver!, TimeSpan.FromSeconds(10));
-        wait.Until(driver =>
-        {
-          var elements = driver.FindElements(helpers.ElemPath.itemSelector);
-          return elements.Count > 0;
-        });
-        ChangeSearchLocation();
+        Thread.Sleep(1500);
+
+        ChangeSearchLocation(searchDto?.Region ?? _defaultSearchValue);
 
         //searchItems = _driver?.FindElements(helpers.ElemPath.itemSelector)!;
       }
       catch (Exception ex)
       {
-        Console.WriteLine($"Неполадка {0}", ex.Message);
+        Console.WriteLine($"Неполадка {ex.Message}");
       }
       finally
       {
         //_driver?.Quit();
       }
 
-      return resultSearch;
+      return Enumerable.Empty<string>();
     }
 
     //TODO: пересмотреть далее параметр на параметр DTO модели.
@@ -55,10 +62,10 @@ namespace AvitoParse.services
     /// <summary>
     /// Смена региона поиска
     /// </summary>
-    public void ChangeSearchLocation(string region = "Рубцовск") 
+    public void ChangeSearchLocation(string region) 
     {
       if (_driver is null) return;
-
+      
       try
       {
         var wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10))
@@ -66,7 +73,11 @@ namespace AvitoParse.services
           PollingInterval = TimeSpan.FromMilliseconds(500)
         };
 
-        _driver?.FindElement(helpers.ElemPath.searchRegion).Click();
+        var changeRegionElement = _driver?.FindElement(helpers.ElemPath.searchRegion) ?? _driver?.FindElement(helpers.ElemPath.searchRegion0);
+        if (changeRegionElement is null)
+          throw new ChangeRegionElementException();
+
+        changeRegionElement.Click();
 
         var searchInput = _driver?.FindElement(helpers.ElemPath.regionInput);
         searchInput?.Click();
@@ -91,28 +102,19 @@ namespace AvitoParse.services
         foreach (var buttonItem in buttonItems)
         {
           var spanItems = buttonItem.FindElements(By.XPath(".//span"));
-          var isBreaked = false;
-          foreach (var spanItem in spanItems)
-          {
-            var text = spanItem.Text;
-            if (text.Contains(region, StringComparison.OrdinalIgnoreCase))
-            {
-              spanItem.Click();
-              isBreaked = true;
-              break;
-            }
-          }
+          var isBreaked = CheckStrictEntry(region, buttonItems) || CheckPartialEntry(region, buttonItems);
+
           if (isBreaked)
             break;
         }
 
-        // Прожать кнопку поиска всех объявялений по региону
+        // Прожать кнопку поиска всех объявлений по региону
         // TODO: понаблюдать за сбоями в прожатии элемента
         _driver?.FindElement(helpers.ElemPath.showAnnouncement).Click();
       }
       catch (Exception ex)
       {
-        Console.WriteLine($"Неполадка {0}", ex.Message);
+        Console.WriteLine($"Неполадка {ex.Message}");
       }
       finally
       {
@@ -120,12 +122,48 @@ namespace AvitoParse.services
       }
     }
 
-    ~SearchService()
+    public bool CheckStrictEntry(string region, ReadOnlyCollection<IWebElement> spanItems)
     {
-      if (_driver is not null)
+      if (spanItems is null) 
+        return false;
+
+      foreach (var spanItem in spanItems)
       {
-        _driver?.Quit();
+        var text = spanItem.Text;
+        if (text.ToLower().Equals(region?.ToLower()))
+        {
+          spanItem.Click();
+          return true;
+        }
       }
-    } 
+
+      return false;
+    }
+
+    public bool CheckPartialEntry(string region, ReadOnlyCollection<IWebElement> spanItems)
+    {
+      if (spanItems is null)
+        return false;
+
+      foreach (var spanItem in spanItems)
+      {
+        var text = spanItem.Text;
+        if (text.Contains(region!, StringComparison.OrdinalIgnoreCase))
+        {
+          spanItem.Click();
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    //~SearchService()
+    //{
+    //  if (_driver is not null)
+    //  {
+    //    _driver?.Quit();
+    //  }
+    //} 
   }
 }

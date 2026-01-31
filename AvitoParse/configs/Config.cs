@@ -11,8 +11,8 @@ namespace AvitoParse.configs
       get { return _driver; } 
     }
     readonly string? _url = "https://www.avito.ru/";
-    private int _waitForLoading = 5000;
-    public IWebDriver? DriverInit()
+    private int _waitForLoading = 5;
+    public IWebDriver DriverInit()
     {
       try
       {
@@ -27,15 +27,17 @@ namespace AvitoParse.configs
         //options.AddArgument("--proxy-server='direct://'");
         //options.AddArgument("--proxy-bypass-list=*");
 
+        options.AddArgument("--disable-blink-features=AutomationControlled");
+
         _driver = new ChromeDriver(options);
         _driver.Navigate().GoToUrl(_url!);
-        _driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromMilliseconds(_waitForLoading);
+        _driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(_waitForLoading);
       }
       catch (Exception ex)
       {
-        Console.WriteLine($"Неполадка {0}", ex.Message);
+        Console.WriteLine($"Неполадка {ex.Message} - {nameof(DriverInit)}");
       }
-      return _driver;
+      return _driver!;
     }
   }
 }
