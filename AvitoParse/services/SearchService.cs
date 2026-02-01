@@ -26,13 +26,13 @@ namespace AvitoParse.services
     /// </summary>
     /// <param name="searchDto"></param>
     /// <returns></returns>
-    public IEnumerable<CardProductOutputDTO> GetSearchResults(SearchDTO? searchDto)
+    public List<CardProductOutputDTO> GetSearchResults(SearchDTO? searchDto)
     {
       if (string.IsNullOrWhiteSpace(searchDto?.Query))
-        return Enumerable.Empty<CardProductOutputDTO>();
+        return new List<CardProductOutputDTO>();
 
       if (_driver == null) 
-        return Enumerable.Empty<CardProductOutputDTO>();
+        return new List<CardProductOutputDTO>();
 
       IReadOnlyCollection<IWebElement> searchItems;
       var productsInfo = new List<CardProductOutputDTO>();
@@ -47,17 +47,7 @@ namespace AvitoParse.services
         ChangeSearchLocation(searchDto?.Region ?? _defaultSearchValue);
 
         searchItems = _driver?.FindElements(helpers.ElemPath.itemSelector)!;
-
-        // TODO: вынести в отдельный метод
-        foreach (var item in searchItems) 
-        {
-          var firstItemPhotoUrl = item.FindElement(By.XPath(".//div[1]//div[1]//a")).GetAttribute("href");
-          var firstItemTitle = item.FindElement(By.XPath(".//div[1]//div[1]//div[2]//div[2]//div[1]//div[1]//div[1]//h2//a")).Text;
-          var firstItemPrice = item.FindElement(By.XPath(".//div[1]//div[1]//div[2]//div[2]//div[2]//span//div[1]//div[1]//p//strong//span")).Text;
-
-          productsInfo.Add(new CardProductOutputDTO(firstItemPhotoUrl, firstItemTitle, firstItemPrice));
-        }
-
+        productsInfo = GetCardProducts(searchItems);
       }
       catch
       {
@@ -68,6 +58,25 @@ namespace AvitoParse.services
         //_driver?.Quit();
       }
 
+      return productsInfo;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="searchItems">Коллекция IWebElement</param>
+    /// <returns>Коллекция типа CardProductOutputDTO - список информации о карточках товаров</returns>
+    static List<CardProductOutputDTO> GetCardProducts(IReadOnlyCollection<IWebElement> searchItems)
+    {
+      var productsInfo = new List<CardProductOutputDTO>();
+      foreach (var item in searchItems)
+      {
+        var itemUrl = item.FindElement(helpers.ElemPath.itemUrl).GetAttribute("href");
+        var itemTitle = item.FindElement(helpers.ElemPath.itemTitle).Text;
+        var itemPrice = item.FindElement(helpers.ElemPath.itemPrice).Text;
+
+        productsInfo.Add(new CardProductOutputDTO(itemUrl, itemTitle, itemPrice));
+      }
       return productsInfo;
     }
 

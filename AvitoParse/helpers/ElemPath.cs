@@ -4,7 +4,7 @@ namespace AvitoParse.helpers
 {
   public static class ElemPath
   {
-    //Выбор  региона для поиска
+    // Выбор  региона для поиска
     public static readonly By searchRegion0 = By.XPath("//div[@class='main-link-wrapper-FaUIo']//span[@class='main-link-firstLine-ffKwQ']");
     public static readonly By searchRegion = By.XPath("//div[@class='index-rightWrapper-su9bk']//span[@class='buyer-pages-mfe-location-nev1ty']");
     // Сам input в форме ввода региона
@@ -16,14 +16,23 @@ namespace AvitoParse.helpers
     // Кнопка показать более 1 тыс. объявлений
     public static readonly By showAnnouncement = By.XPath("//button[@data-marker='popup-location/save-button']");
 
-    //Поле ввода для поиска
+    // Поле ввода для поиска
     public static readonly By searchInput = By.XPath("//input[@class='styles-module-input-Z0mvi']");
 
-    //Контейнер с результатами поиска
+    // Контейнер с результатами поиска
     public static readonly By searchContainer = By.XPath("//div[@class='index-content-FRUkN']");
 
-    //Элемент объявления в результатах поиска
+    #region Карточка товара в списке результатов поиска
+    // Элемент объявления в результатах поиска
     public static readonly By itemSelector = By.XPath("//div[@data-marker='item']");
+    // Ссылка на объявление в элементе объявления
+    public static readonly By itemUrl = By.XPath(".//div[1]//div[1]//a");
+    // Заголовок объявления в элементе объявления
+    public static readonly By itemTitle = By.XPath(".//div[1]//div[1]//div[2]//div[2]//div[1]//div[1]//div[1]//h2//a");
+    // Цена объявления в элементе объявления
+    public static readonly By itemPrice = By.XPath(".//div[1]//div[1]//div[2]//div[2]//div[2]//span//div[1]//div[1]//p//strong//span");
+    #endregion
+
 
 
   }
