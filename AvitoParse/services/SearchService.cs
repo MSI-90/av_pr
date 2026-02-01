@@ -33,13 +33,14 @@ namespace AvitoParse.services
       if (_driver == null) 
         return Enumerable.Empty<string>();
 
+      IReadOnlyCollection<IWebElement> searchItems;
       try
       {
         _driver?.FindElement(helpers.ElemPath.searchInput).SendKeys(searchDto?.Query + Keys.Enter);
 
         var wait = new WebDriverWait(_driver!, TimeSpan.FromSeconds(2));
 
-        Thread.Sleep(1500);
+        Thread.Sleep(3000);
 
         ChangeSearchLocation(searchDto?.Region ?? _defaultSearchValue);
 
@@ -73,13 +74,16 @@ namespace AvitoParse.services
           PollingInterval = TimeSpan.FromMilliseconds(500)
         };
 
-        var changeRegionElement = _driver?.FindElement(helpers.ElemPath.searchRegion) ?? _driver?.FindElement(helpers.ElemPath.searchRegion0);
+        var changeRegionElement = _driver?.FindElements(helpers.ElemPath.searchRegion)
+          .FirstOrDefault() ?? _driver?.FindElements(helpers.ElemPath.searchRegion0).FirstOrDefault();
+
         if (changeRegionElement is null)
           throw new ChangeRegionElementException();
 
         changeRegionElement.Click();
 
-        var searchInput = _driver?.FindElement(helpers.ElemPath.regionInput);
+        var searchInput = ShowAnnouncement();
+
         searchInput?.Click();
         while (!string.IsNullOrEmpty(searchInput?.GetAttribute("value")))
         {
@@ -89,7 +93,7 @@ namespace AvitoParse.services
         //установить текст в input и прожать Enter
         searchInput?.SendKeys(region + Keys.Enter);
 
-        Thread.Sleep(2000);
+        Thread.Sleep(3000);
 
         //Выпадающий список, отображающийся после ввода и подтверждения текста
         var regionAfterSendText = _driver?.FindElement(helpers.ElemPath.regionAfterSendText);
@@ -97,8 +101,7 @@ namespace AvitoParse.services
         // Элементы выпадающего списка представленные как Button-обертка
         var buttonItems = regionAfterSendText?.FindElements(By.XPath(".//button"));
 
-        // Найти полное совпадение строки
-        // TODO: пересмотреть на неполное совпадение строк
+        // Найти полное или частичное совпадение строки
         foreach (var buttonItem in buttonItems)
         {
           var spanItems = buttonItem.FindElements(By.XPath(".//span"));
@@ -122,7 +125,24 @@ namespace AvitoParse.services
       }
     }
 
-    public bool CheckStrictEntry(string region, ReadOnlyCollection<IWebElement> spanItems)
+    IWebElement? ShowAnnouncement()
+    {
+      IReadOnlyCollection<IWebElement>? searchInputs = _driver?.FindElements(helpers.ElemPath.regionInput);
+      IWebElement? searchInput = null;
+      if (searchInputs?.Count > 1)
+      {
+        searchInput = searchInputs
+          .Where(input => string.Equals(
+            input.GetAttribute("data-marker"), "popup-location/region/search-input", StringComparison.OrdinalIgnoreCase))
+          .FirstOrDefault();
+      }
+      else
+        searchInput = searchInputs?.FirstOrDefault();
+
+      return searchInput;
+    }
+
+    static bool CheckStrictEntry(string region, ReadOnlyCollection<IWebElement> spanItems)
     {
       if (spanItems is null) 
         return false;
@@ -140,7 +160,7 @@ namespace AvitoParse.services
       return false;
     }
 
-    public bool CheckPartialEntry(string region, ReadOnlyCollection<IWebElement> spanItems)
+    static bool CheckPartialEntry(string region, ReadOnlyCollection<IWebElement> spanItems)
     {
       if (spanItems is null)
         return false;
@@ -157,13 +177,5 @@ namespace AvitoParse.services
 
       return false;
     }
-
-    //~SearchService()
-    //{
-    //  if (_driver is not null)
-    //  {
-    //    _driver?.Quit();
-    //  }
-    //} 
   }
 }
