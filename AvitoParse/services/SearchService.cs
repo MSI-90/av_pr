@@ -2,6 +2,7 @@
 using AvitoParse.Contracts;
 using AvitoParse.Models.Exceptions;
 using AvitoParse.Shared;
+using Microsoft.AspNetCore.Http.HttpResults;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
 using System.Collections.ObjectModel;
@@ -25,15 +26,16 @@ namespace AvitoParse.services
     /// </summary>
     /// <param name="searchDto"></param>
     /// <returns></returns>
-    public IEnumerable<string> GetSearchResults(SearchDTO? searchDto)
+    public IEnumerable<CardProductOutputDTO> GetSearchResults(SearchDTO? searchDto)
     {
       if (string.IsNullOrWhiteSpace(searchDto?.Query))
-        return Enumerable.Empty<string>();
+        return Enumerable.Empty<CardProductOutputDTO>();
 
       if (_driver == null) 
-        return Enumerable.Empty<string>();
+        return Enumerable.Empty<CardProductOutputDTO>();
 
       IReadOnlyCollection<IWebElement> searchItems;
+      var productsInfo = new List<CardProductOutputDTO>();
       try
       {
         _driver?.FindElement(helpers.ElemPath.searchInput).SendKeys(searchDto?.Query + Keys.Enter);
@@ -44,18 +46,29 @@ namespace AvitoParse.services
 
         ChangeSearchLocation(searchDto?.Region ?? _defaultSearchValue);
 
-        //searchItems = _driver?.FindElements(helpers.ElemPath.itemSelector)!;
+        searchItems = _driver?.FindElements(helpers.ElemPath.itemSelector)!;
+
+        // TODO: вынести в отдельный метод
+        foreach (var item in searchItems) 
+        {
+          var firstItemPhotoUrl = item.FindElement(By.XPath(".//div[1]//div[1]//a")).GetAttribute("href");
+          var firstItemTitle = item.FindElement(By.XPath(".//div[1]//div[1]//div[2]//div[2]//div[1]//div[1]//div[1]//h2//a")).Text;
+          var firstItemPrice = item.FindElement(By.XPath(".//div[1]//div[1]//div[2]//div[2]//div[2]//span//div[1]//div[1]//p//strong//span")).Text;
+
+          productsInfo.Add(new CardProductOutputDTO(firstItemPhotoUrl, firstItemTitle, firstItemPrice));
+        }
+
       }
-      catch (Exception ex)
+      catch
       {
-        Console.WriteLine($"Неполадка {ex.Message}");
+        throw new Exception("Произошла ошибка, ответсвенные уже знают о ней. Попробуйте повторить запрос через 1 час.");
       }
       finally
       {
         //_driver?.Quit();
       }
 
-      return Enumerable.Empty<string>();
+      return productsInfo;
     }
 
     //TODO: пересмотреть далее параметр на параметр DTO модели.

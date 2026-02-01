@@ -23,6 +23,9 @@ namespace AvitoParse
           case ChangeRegionElementException:
             httpContext.Response.StatusCode = StatusCodes.Status400BadRequest; 
             break;
+          default:
+            httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            break;
         }
 
         _logger.LogError($"Что-то пошло не так: {exception.Message}");

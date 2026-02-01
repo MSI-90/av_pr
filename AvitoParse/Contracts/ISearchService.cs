@@ -4,7 +4,7 @@ namespace AvitoParse.Contracts
 {
   public interface ISearchService
   {
-    IEnumerable<string> GetSearchResults(SearchDTO? query);
+    IEnumerable<CardProductOutputDTO> GetSearchResults(SearchDTO? query);
     void ChangeSearchLocation(string region);
   }
 }
